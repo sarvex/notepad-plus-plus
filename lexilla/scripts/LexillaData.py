@@ -47,9 +47,7 @@ def FindModules(lexFile):
     modules = []
     partLine = ""
     with lexFile.open(encoding=neutralEncoding) as f:
-        lineNum = 0
-        for l in f.readlines():
-            lineNum += 1
+        for lineNum, l in enumerate(f.readlines(), start=1):
             l = l.rstrip()
             if partLine or l.startswith("LexerModule"):
                 if ")" in l:
@@ -113,17 +111,17 @@ knownIrregularProperties = [
 def FindProperties(lexFile):
     properties = {}
     with open(lexFile, encoding=neutralEncoding) as f:
-        for l in f.readlines():
+        for l in f:
             if ("GetProperty" in l or "DefineProperty" in l) and "\"" in l:
                 l = l.strip()
                 if not l.startswith("//"):	# Drop comments
                     propertyName = l.split("\"")[1]
-                    if propertyName.lower() == propertyName:
-                        # Only allow lower case property names
-                        if propertyName in knownIrregularProperties or \
-                            propertyName.startswith("fold.") or \
-                            propertyName.startswith("lexer."):
-                            properties[propertyName] = 1
+                    if propertyName.lower() == propertyName and (
+                        propertyName in knownIrregularProperties
+                        or propertyName.startswith("fold.")
+                        or propertyName.startswith("lexer.")
+                    ):
+                        properties[propertyName] = 1
     return properties
 
 def FindPropertyDocumentation(lexFile):
@@ -187,7 +185,7 @@ def FindCredits(historyFile):
                     credit = title.strip()
                     if credit:
                         credit += " "
-                    credit += name + " " + url
+                    credit += f"{name} {url}"
                 credits.append(credit)
     return credits
 
@@ -201,26 +199,25 @@ class LexillaData:
     def __init__(self, scintillaRoot):
         # Discover version information
         self.version = (scintillaRoot / "version.txt").read_text().strip()
-        self.versionDotted = self.version[0] + '.' + self.version[1] + '.' + \
-            self.version[2]
+        self.versionDotted = f'{self.version[0]}.{self.version[1]}.{self.version[2]}'
         self.versionCommad = self.versionDotted.replace(".", ", ") + ', 0'
 
         with (scintillaRoot / "doc" / "Lexilla.html").open() as f:
             self.dateModified = [l for l in f.readlines() if "Date.Modified" in l]\
-                [0].split('\"')[3]
+                    [0].split('\"')[3]
             # 20130602
             # Lexilla.html
             dtModified = datetime.datetime.strptime(self.dateModified, "%Y%m%d")
-            self.yearModified = self.dateModified[0:4]
+            self.yearModified = self.dateModified[:4]
             monthModified = dtModified.strftime("%B")
             dayModified = "%d" % dtModified.day
-            self.mdyModified = monthModified + " " + dayModified + " " + self.yearModified
+            self.mdyModified = f"{monthModified} {dayModified} {self.yearModified}"
             # May 22 2013
             # Lexilla.html, SciTE.html
-            self.dmyModified = dayModified + " " + monthModified + " " + self.yearModified
+            self.dmyModified = f"{dayModified} {monthModified} {self.yearModified}"
             # 22 May 2013
             # LexillaHistory.html -- only first should change
-            self.myModified = monthModified + " " + self.yearModified
+            self.myModified = f"{monthModified} {self.yearModified}"
 
         # Find all the lexer source code files
         lexFilePaths = list((scintillaRoot / "lexers").glob("Lex*.cxx"))
@@ -256,25 +253,27 @@ def printWrapped(text):
 
 if __name__=="__main__":
     sci = LexillaData(pathlib.Path(__file__).resolve().parent.parent)
-    print("Version   %s   %s   %s" % (sci.version, sci.versionDotted, sci.versionCommad))
-    print("Date last modified    %s   %s   %s   %s   %s" % (
-        sci.dateModified, sci.yearModified, sci.mdyModified, sci.dmyModified, sci.myModified))
-    printWrapped(str(len(sci.lexFiles)) + " lexer files: " + ", ".join(sci.lexFiles))
-    printWrapped(str(len(sci.lexerModules)) + " lexer modules: " + ", ".join(sci.lexerModules))
-    #~ printWrapped(str(len(sci.lexersXcode)) + " Xcode lexer references: " + ", ".join(
-        #~ [lex+":"+uids[0]+","+uids[1] for lex, uids in sci.lexersXcode.items()]))
+    print(f"Version   {sci.version}   {sci.versionDotted}   {sci.versionCommad}")
+    print(
+        f"Date last modified    {sci.dateModified}   {sci.yearModified}   {sci.mdyModified}   {sci.dmyModified}   {sci.myModified}"
+    )
+    printWrapped(f"{len(sci.lexFiles)} lexer files: " + ", ".join(sci.lexFiles))
+    printWrapped(
+        f"{len(sci.lexerModules)} lexer modules: "
+        + ", ".join(sci.lexerModules)
+    )
     print("Lexer name to ID:")
     lexNames = sorted(sci.sclexFromName.keys())
     for lexName in lexNames:
         sclex = sci.sclexFromName[lexName]
         fileName = sci.fileFromSclex[sclex].name
-        print("    " + lexName + " -> " + sclex + " in " + fileName)
+        print(f"    {lexName} -> {sclex} in {fileName}")
     printWrapped("Lexer properties: " + ", ".join(sci.lexerProperties))
     print("Lexer property documentation:")
     documentProperties = list(sci.propertyDocuments.keys())
     SortListInsensitive(documentProperties)
     for k in documentProperties:
-        print("    " + k)
+        print(f"    {k}")
         print(textwrap.fill(sci.propertyDocuments[k], initial_indent="        ",
             subsequent_indent="        "))
     print("Credits:")

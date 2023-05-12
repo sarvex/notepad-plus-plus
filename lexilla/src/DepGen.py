@@ -28,14 +28,17 @@ def Generate():
 	deps = Dependencies.FindDependencies(sources,  includes, ".o", "../lexilla/")
 
 	# Place the objects in $(DIR_O)
-	deps = [["$(DIR_O)/"+obj, headers] for obj, headers in deps]
+	deps = [[f"$(DIR_O)/{obj}", headers] for obj, headers in deps]
 
 	Dependencies.UpdateDependencies(os.path.join(lexilla, "src", "deps.mak"), deps, topComment)
 
 	# Create the dependencies file for MSVC
 
 	# Place the objects in $(DIR_O) and change extension from ".o" to ".obj"
-	deps = [["$(DIR_O)/"+Dependencies.PathStem(obj)+".obj", headers] for obj, headers in deps]
+	deps = [
+		[f"$(DIR_O)/{Dependencies.PathStem(obj)}.obj", headers]
+		for obj, headers in deps
+	]
 
 	Dependencies.UpdateDependencies(os.path.join(lexilla, "src", "nmdeps.mak"), deps, topComment)
 

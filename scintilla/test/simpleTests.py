@@ -257,14 +257,12 @@ class TestSimple(unittest.TestCase):
 		for col in range(10):
 			if col == 0:
 				self.assertEquals(self.ed.FindColumn(0, col), 0)
-			elif col == 1:
+			elif col == 1 or col not in [8, 9]:
 				self.assertEquals(self.ed.FindColumn(0, col), 1)
 			elif col == 8:
 				self.assertEquals(self.ed.FindColumn(0, col), 2)
-			elif col == 9:
-				self.assertEquals(self.ed.FindColumn(0, col), 3)
 			else:
-				self.assertEquals(self.ed.FindColumn(0, col), 1)
+				self.assertEquals(self.ed.FindColumn(0, col), 3)
 		self.ed.TabWidth = 4
 		self.assertEquals(self.ed.TabWidth, 4)
 		self.assertEquals(self.ed.GetColumn(0), 0)
@@ -805,9 +803,7 @@ class TestSimple(unittest.TestCase):
 
 	def testLinePositions(self):
 		text = b"ab\ncd\nef"
-		nl = b"\n"
-		if sys.version_info[0] == 3:
-			nl = ord(b"\n")
+		nl = ord(b"\n") if sys.version_info[0] == 3 else b"\n"
 		self.ed.AddText(len(text), text)
 		self.assertEquals(self.ed.LineFromPosition(-1), 0)
 		line = 0
@@ -1708,12 +1704,12 @@ def selectionPositionRepresentation(selectionPosition):
 	position, virtualSpace = selectionPosition
 	representation = str(position)
 	if virtualSpace > 0:
-		representation += "+" + str(virtualSpace) + "v"
+		representation += f"+{str(virtualSpace)}v"
 	return representation
 
 def selectionRangeRepresentation(selectionRange):
 	anchor, caret = selectionRange
-	return selectionPositionRepresentation(anchor) + "-" + selectionPositionRepresentation(caret)
+	return f"{selectionPositionRepresentation(anchor)}-{selectionPositionRepresentation(caret)}"
 
 class TestMultiSelection(unittest.TestCase):
 
@@ -3113,40 +3109,40 @@ class TestWordChars(unittest.TestCase):
 		else:
 			# Python 3, use bytes()
 			result = bytes(x for x in chars if x != 0)
-		meth = getattr(self.ed, "Set%sChars" % (charClass.capitalize()))
+		meth = getattr(self.ed, f"Set{charClass.capitalize()}Chars")
 		return meth(None, result)
 
 	def assertCharSetsEqual(self, first, second, *args, **kwargs):
 		""" Assert that the two character sets are equal.
 		If either set are an iterable of numbers, convert them to chars
 		first. """
-		first_set = set()
-		for c in first:
-			first_set.add(chr(c) if isinstance(c, int) else c)
-		second_set = set()
-		for c in second:
-			second_set.add(chr(c) if isinstance(c, int) else c)
+		first_set = {chr(c) if isinstance(c, int) else c for c in first}
+		second_set = {chr(c) if isinstance(c, int) else c for c in second}
 		return self.assertEqual(first_set, second_set, *args, **kwargs)
 
 	def testDefaultWordChars(self):
 		# check that the default word chars are as expected
 		data = self.ed.GetWordChars(None)
-		expected = set(string.digits + string.ascii_letters + '_') | \
-			set(chr(x) for x in range(0x80, 0x100))
+		expected = set(string.digits + string.ascii_letters + '_') | {
+			chr(x) for x in range(0x80, 0x100)
+		}
 		self.assertCharSetsEqual(data, expected)
 
 	def testDefaultWhitespaceChars(self):
 		# check that the default whitespace chars are as expected
 		data = self.ed.GetWhitespaceChars(None)
-		expected = (set(chr(x) for x in (range(0, 0x20))) | set(' ') | set('\x7f')) - \
-			set(['\r', '\n'])
+		expected = ({chr(x) for x in (range(0, 0x20))} | set(' ') | set('\x7f')) - {
+			'\r',
+			'\n',
+		}
 		self.assertCharSetsEqual(data, expected)
 
 	def testDefaultPunctuationChars(self):
 		# check that the default punctuation chars are as expected
 		data = self.ed.GetPunctuationChars(None)
-		expected = set(chr(x) for x in range(0x20, 0x80)) - \
-			set(string.ascii_letters + string.digits + "\r\n\x7f_ ")
+		expected = {chr(x) for x in range(0x20, 0x80)} - set(
+			string.ascii_letters + string.digits + "\r\n\x7f_ "
+		)
 		self.assertCharSetsEqual(data, expected)
 
 	def testCustomWordChars(self):
@@ -3165,11 +3161,11 @@ class TestWordChars(unittest.TestCase):
 		# check setting whitespace chars to non-default values
 		self._setChars("word", range(1, 0x100))
 		# we can't change chr(0) from being anything but whitespace
-		expected = set([0])
+		expected = {0}
 		data = self.ed.GetWhitespaceChars(None)
 		self.assertCharSetsEqual(data, expected)
 		# now try to set it to something custom
-		expected = set(range(1, 0x100, 2)) | set([0])
+		expected = set(range(1, 0x100, 2)) | {0}
 		self._setChars("whitespace", expected)
 		data = self.ed.GetWhitespaceChars(None)
 		self.assertCharSetsEqual(data, expected)

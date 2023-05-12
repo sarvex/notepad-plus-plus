@@ -20,14 +20,17 @@ def Generate():
 	deps = Dependencies.FindDependencies(["../win32/*.cxx"] + sources,  ["../win32"] + includes, ".o", "../win32/")
 
 	# Place the objects in $(DIR_O)
-	deps = [["$(DIR_O)/"+obj, headers] for obj, headers in deps]
+	deps = [[f"$(DIR_O)/{obj}", headers] for obj, headers in deps]
 
 	Dependencies.UpdateDependencies("../win32/deps.mak", deps, topComment)
 
 	# Create the dependencies file for MSVC
 
 	# Place the objects in $(DIR_O) and change extension from ".o" to ".obj"
-	deps = [["$(DIR_O)/"+Dependencies.PathStem(obj)+".obj", headers] for obj, headers in deps]
+	deps = [
+		[f"$(DIR_O)/{Dependencies.PathStem(obj)}.obj", headers]
+		for obj, headers in deps
+	]
 
 	Dependencies.UpdateDependencies("../win32/nmdeps.mak", deps, topComment)
 

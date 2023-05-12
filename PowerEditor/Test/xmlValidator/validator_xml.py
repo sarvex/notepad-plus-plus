@@ -24,7 +24,7 @@ def post_error(message):
     }
 
     if api_url:
-        requests.post(api_url + "api/build/messages", json=message)
+        requests.post(f"{api_url}api/build/messages", json=message)
     else:
         from pprint import pprint
         pprint(message)

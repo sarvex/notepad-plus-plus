@@ -64,7 +64,7 @@ class TestPerformance(unittest.TestCase):
 		insert = (string.digits + "\n").encode('utf-8')
 		self.ed.AddText(len(data), data)
 		start = timer()
-		for i in range(2000):
+		for _ in range(2000):
 			self.ed.InsertText(0, insert)
 		end = timer()
 		duration = end - start
@@ -96,7 +96,7 @@ class TestPerformance(unittest.TestCase):
 		self.ed.AddText(len(manyLines), manyLines)
 		searchString = "φ".encode('utf-8')
 		start = timer()
-		for i in range(1000):
+		for _ in range(1000):
 			self.ed.TargetStart = 0
 			self.ed.TargetEnd = self.ed.Length-1
 			self.ed.SearchFlags = self.ed.SCFIND_MATCHCASE
@@ -115,7 +115,7 @@ class TestPerformance(unittest.TestCase):
 		self.ed.AddText(len(manyLines), manyLines)
 		searchString = "φ".encode('utf-8')
 		start = timer()
-		for i in range(20):
+		for _ in range(20):
 			self.ed.TargetStart = 0
 			self.ed.TargetEnd = self.ed.Length-1
 			self.ed.SearchFlags = 0
@@ -134,7 +134,7 @@ class TestPerformance(unittest.TestCase):
 		self.ed.AddText(len(manyLines), manyLines)
 		searchString = "φ".encode('utf-8')
 		start = timer()
-		for i in range(20):
+		for _ in range(20):
 			self.ed.TargetStart = 0
 			self.ed.TargetEnd = self.ed.Length-1
 			self.ed.SearchFlags = 0

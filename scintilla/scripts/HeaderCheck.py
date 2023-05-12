@@ -69,31 +69,30 @@ def CheckFiles(headerOrderTxt):
                 #~ print("equal", headerOrder[m])
                 i += 1
                 m += 1
+            elif headerOrder[m] not in incs:
+                #~ print("skip", headerOrder[m])
+                m += 1
+            elif incs[i] not in headerOrder:
+                #~ print(str(f) + ":1: Add master", incs[i])
+                headerOrder.insert(m, incs[i])
+                needs.append(incs[i])
+                i += 1
+                m += 1
             else:
-                if headerOrder[m] not in incs:
-                    #~ print("skip", headerOrder[m])
-                    m += 1
-                elif incs[i] not in headerOrder:
-                    #~ print(str(f) + ":1: Add master", incs[i])
-                    headerOrder.insert(m, incs[i])
-                    needs.append(incs[i])
-                    i += 1
-                    m += 1
-                else:
-                    i += 1
+                i += 1
         if needs:
             print(f"{f}:1: needs these headers:")
             for header in needs:
-                print("#include " + header)
+                print(f"#include {header}")
 
         # Detect out of order
         ordered = SortLike(incs, headerOrder)
         if incs != ordered:
             print(f"{f}:1: is out of order")
-            fOrdered = pathlib.Path(str(f) + ".ordered")
+            fOrdered = pathlib.Path(f"{str(f)}.ordered")
             with fOrdered.open("w") as headerOut:
                 for header in ordered:
-                    headerOut.write("#include " + header + "\n")
+                    headerOut.write(f"#include {header}" + "\n")
             print(f"{fOrdered}:1: is ordered")
 
     if headerOrder != originalOrder:
@@ -103,10 +102,9 @@ def CheckFiles(headerOrderTxt):
         print(f"   Added {', '.join(newIncludes)}.")
         with headerOrderNew.open("w") as headerOut:
             for header in headerOrder:
-                headerOut.write("#include " + header + "\n")
+                headerOut.write(f"#include {header}" + "\n")
 
-    unused = sorted(set(headerOrder) - allIncs)
-    if unused:
+    if unused := sorted(set(headerOrder) - allIncs):
         print("In HeaderOrder.txt but not used")
         print("\n".join(unused))
 

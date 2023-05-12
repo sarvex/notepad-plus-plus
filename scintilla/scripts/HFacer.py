@@ -20,13 +20,13 @@ def printHFile(f):
 				anyProvisional = True
 			previousCategory = v["Category"]
 			if v["FeatureType"] in ["fun", "get", "set"]:
-				featureDefineName = "SCI_" + name.upper()
-				out.append("#define " + featureDefineName + " " + v["Value"])
+				featureDefineName = f"SCI_{name.upper()}"
+				out.append(f"#define {featureDefineName} " + v["Value"])
 			elif v["FeatureType"] in ["evt"]:
-				featureDefineName = "SCN_" + name.upper()
-				out.append("#define " + featureDefineName + " " + v["Value"])
+				featureDefineName = f"SCN_{name.upper()}"
+				out.append(f"#define {featureDefineName} " + v["Value"])
 			elif v["FeatureType"] in ["val"]:
-				out.append("#define " + name + " " + v["Value"])
+				out.append(f"#define {name} " + v["Value"])
 	if anyProvisional:
 		out.append("#endif")
 	return out
@@ -38,7 +38,7 @@ def RegenerateAll(root, showMaxID):
 	f.ReadFromFile(root / "include/Scintilla.iface")
 	FileGenerator.Regenerate(root / "include/Scintilla.h", "/* ", printHFile(f))
 	if showMaxID:
-		valueSet = set(int(x) for x in f.values if int(x) < 3000)
+		valueSet = {int(x) for x in f.values if int(x) < 3000}
 		maximumID = max(valueSet)
 		print("Maximum ID is %d" % maximumID)
 		if showUnused:

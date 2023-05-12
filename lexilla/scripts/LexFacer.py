@@ -15,9 +15,8 @@ def printLexHFile(f):
 	out = []
 	for name in f.order:
 		v = f.features[name]
-		if v["FeatureType"] in ["val"]:
-			if "SCE_" in name or "SCLEX_" in name:
-				out.append("#define " + name + " " + v["Value"])
+		if v["FeatureType"] in ["val"] and ("SCE_" in name or "SCLEX_" in name):
+			out.append(f"#define {name} " + v["Value"])
 	return out
 
 def RegenerateAll(root, _showMaxID):

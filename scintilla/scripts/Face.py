@@ -71,77 +71,75 @@ class Face:
 		currentCategory = ""
 		currentComment = []
 		currentCommentFinished = 0
-		file = open(name)
-		for line in file.readlines():
-			line = sanitiseLine(line)
-			if line:
-				if line[0] == "#":
-					if line[1] == " ":
-						if currentCommentFinished:
+		with open(name) as file:
+			for line in file:
+				if line := sanitiseLine(line):
+					if line[0] == "#":
+						if line[1] == " ":
+							if currentCommentFinished:
+								currentComment = []
+								currentCommentFinished = 0
+							currentComment.append(line[2:])
+					else:
+						currentCommentFinished = 1
+						featureType, featureVal = line.split(" ", 1)
+						if featureType in ["fun", "get", "set"]:
+							try:
+								retType, name, value, param1, param2 = decodeFunction(featureVal)
+							except ValueError:
+								print(f"Failed to decode {line}")
+								raise
+							p1 = decodeParam(param1)
+							p2 = decodeParam(param2)
+							self.features[name] = {
+								"FeatureType": featureType,
+								"ReturnType": retType,
+								"Value": value,
+								"Param1Type": p1[0], "Param1Name": p1[1], "Param1Value": p1[2],
+								"Param2Type": p2[0], "Param2Name": p2[1], "Param2Value": p2[2],
+								"Category": currentCategory, "Comment": currentComment
+							}
+							if value in self.values:
+								raise Exception(f"Duplicate value {value} {name}")
+							self.values[value] = 1
+							self.order.append(name)
 							currentComment = []
-							currentCommentFinished = 0
-						currentComment.append(line[2:])
-				else:
-					currentCommentFinished = 1
-					featureType, featureVal = line.split(" ", 1)
-					if featureType in ["fun", "get", "set"]:
-						try:
-							retType, name, value, param1, param2 = decodeFunction(featureVal)
-						except ValueError:
-							print("Failed to decode %s" % line)
-							raise
-						p1 = decodeParam(param1)
-						p2 = decodeParam(param2)
-						self.features[name] = {
-							"FeatureType": featureType,
-							"ReturnType": retType,
-							"Value": value,
-							"Param1Type": p1[0], "Param1Name": p1[1], "Param1Value": p1[2],
-							"Param2Type": p2[0], "Param2Name": p2[1], "Param2Value": p2[2],
-							"Category": currentCategory, "Comment": currentComment
-						}
-						if value in self.values:
-							raise Exception("Duplicate value " + value + " " + name)
-						self.values[value] = 1
-						self.order.append(name)
-						currentComment = []
-					elif featureType == "evt":
-						retType, name, value = decodeEvent(featureVal)
-						self.features[name] = {
-							"FeatureType": featureType,
-							"ReturnType": retType,
-							"Value": value,
-							"Category": currentCategory, "Comment": currentComment
-						}
-						if value in self.events:
-							raise Exception("Duplicate event " + value + " " + name)
-						self.events[value] = 1
-						self.order.append(name)
-					elif featureType == "cat":
-						currentCategory = featureVal
-					elif featureType == "val":
-						try:
+						elif featureType == "evt":
+							retType, name, value = decodeEvent(featureVal)
+							self.features[name] = {
+								"FeatureType": featureType,
+								"ReturnType": retType,
+								"Value": value,
+								"Category": currentCategory, "Comment": currentComment
+							}
+							if value in self.events:
+								raise Exception(f"Duplicate event {value} {name}")
+							self.events[value] = 1
+							self.order.append(name)
+						elif featureType == "cat":
+							currentCategory = featureVal
+						elif featureType == "val":
+							try:
+								name, value = featureVal.split("=", 1)
+							except ValueError:
+								print(f"Failure {featureVal}")
+								raise Exception()
+							self.features[name] = {
+								"FeatureType": featureType,
+								"Category": currentCategory,
+								"Value": value }
+							self.order.append(name)
+						elif featureType in ["enu", "lex"]:
 							name, value = featureVal.split("=", 1)
-						except ValueError:
-							print("Failure %s" % featureVal)
-							raise Exception()
-						self.features[name] = {
-							"FeatureType": featureType,
-							"Category": currentCategory,
-							"Value": value }
-						self.order.append(name)
-					elif featureType == "enu" or featureType == "lex":
-						name, value = featureVal.split("=", 1)
-						self.features[name] = {
-							"FeatureType": featureType,
-							"Category": currentCategory,
-							"Value": value,
-							"Comment": currentComment }
-						self.order.append(name)
-						currentComment = []
-					elif featureType == "ali":
-						# Enumeration alias
-						name, value = featureVal.split("=", 1)
-						self.aliases[name] = value
-						currentComment = []
-		file.close()
+							self.features[name] = {
+								"FeatureType": featureType,
+								"Category": currentCategory,
+								"Value": value,
+								"Comment": currentComment }
+							self.order.append(name)
+							currentComment = []
+						elif featureType == "ali":
+							# Enumeration alias
+							name, value = featureVal.split("=", 1)
+							self.aliases[name] = value
+							currentComment = []

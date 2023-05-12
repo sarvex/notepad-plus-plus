@@ -4,10 +4,7 @@ def depunctuate(s):
 	"""Docstring 2"""
 	d = ""
 	for ch in s:
-		if ch in 'abcde':
-			d = d + ch
-		else:
-			d = d + " "
+		d = d + ch if ch in 'abcde' else f"{d} "
 	return d
 
 import contextlib

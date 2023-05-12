@@ -63,9 +63,7 @@ def FindHeadersInFileRecursive(filePath, includePath, renames):
 	return headerPaths
 
 def RemoveStart(relPath, start):
-	if relPath.startswith(start):
-		return relPath[len(start):]
-	return relPath
+	return relPath[len(start):] if relPath.startswith(start) else relPath
 
 def ciKey(f):
 	return f.lower()
@@ -128,7 +126,7 @@ def TextFromDependencies(dependencies):
 	joinHeaders = continuationLineEnd + os.linesep + indentHeaders
 	for dep in dependencies:
 		object, headers = dep
-		text += object + ":"
+		text += f"{object}:"
 		for header in headers:
 			text += joinHeaders
 			text += header

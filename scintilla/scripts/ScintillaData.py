@@ -41,7 +41,7 @@ def FindCredits(historyFile, removeLinks=True):
                     credit = title.strip()
                     if credit:
                         credit += " "
-                    credit += name + " " + url
+                    credit += f"{name} {url}"
                 credits.append(credit)
     return credits
 
@@ -49,34 +49,34 @@ class ScintillaData:
     def __init__(self, scintillaRoot):
         # Discover version information
         self.version = (scintillaRoot / "version.txt").read_text().strip()
-        self.versionDotted = self.version[0] + '.' + self.version[1] + '.' + \
-            self.version[2]
+        self.versionDotted = f'{self.version[0]}.{self.version[1]}.{self.version[2]}'
         self.versionCommad = self.versionDotted.replace(".", ", ") + ', 0'
 
         with (scintillaRoot / "doc" / "index.html").open() as f:
             self.dateModified = [l for l in f.readlines() if "Date.Modified" in l]\
-                [0].split('\"')[3]
+                    [0].split('\"')[3]
             # 20130602
             # index.html, SciTE.html
             dtModified = datetime.datetime.strptime(self.dateModified, "%Y%m%d")
-            self.yearModified = self.dateModified[0:4]
+            self.yearModified = self.dateModified[:4]
             monthModified = dtModified.strftime("%B")
             dayModified = "%d" % dtModified.day
-            self.mdyModified = monthModified + " " + dayModified + " " + self.yearModified
+            self.mdyModified = f"{monthModified} {dayModified} {self.yearModified}"
             # May 22 2013
             # index.html, SciTE.html
-            self.dmyModified = dayModified + " " + monthModified + " " + self.yearModified
+            self.dmyModified = f"{dayModified} {monthModified} {self.yearModified}"
             # 22 May 2013
             # ScintillaHistory.html -- only first should change
-            self.myModified = monthModified + " " + self.yearModified
+            self.myModified = f"{monthModified} {self.yearModified}"
 
         self.credits = FindCredits(scintillaRoot / "doc" / "ScintillaHistory.html")
 
 if __name__=="__main__":
     sci = ScintillaData(pathlib.Path(__file__).resolve().parent.parent)
-    print("Version   %s   %s   %s" % (sci.version, sci.versionDotted, sci.versionCommad))
-    print("Date last modified    %s   %s   %s   %s   %s" % (
-        sci.dateModified, sci.yearModified, sci.mdyModified, sci.dmyModified, sci.myModified))
+    print(f"Version   {sci.version}   {sci.versionDotted}   {sci.versionCommad}")
+    print(
+        f"Date last modified    {sci.dateModified}   {sci.yearModified}   {sci.mdyModified}   {sci.dmyModified}   {sci.myModified}"
+    )
     print("Credits:")
     for c in sci.credits:
         sys.stdout.buffer.write(b"    " + c.encode("utf-8") + b"\n")

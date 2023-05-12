@@ -30,12 +30,11 @@ def underscoreName(s):
 	return out
 
 def normalisedName(s, options, role=None):
-	if options["qtStyle"]:
-		if role == "get":
-			s = s.replace("Get", "")
-		return s[0].lower() + s[1:]
-	else:
+	if not options["qtStyle"]:
 		return underscoreName(s)
+	if role == "get":
+		s = s.replace("Get", "")
+	return s[0].lower() + s[1:]
 
 typeAliases = {
 	"position": "int",
@@ -88,7 +87,7 @@ def arguments(v, stringResult, options):
 		p2Type = "sptr_t"
 	if p2Type and not stringResult:
 		if p1Type:
-			ret = ret + ", "
+			ret += ", "
 		ret = ret + p2Type + " " + normalisedName(v["Param2Name"], options)
 	return ret
 
@@ -98,18 +97,17 @@ def printHFile(f, options):
 		v = f.features[name]
 		if v["Category"] != "Deprecated":
 			feat = v["FeatureType"]
-			if feat in ["fun", "get", "set"]:
-				if checkTypes(name, v):
-					constDeclarator = " const" if feat == "get" else ""
-					returnType = cppAlias(v["ReturnType"])
-					if returnType == "int":
-						returnType = "sptr_t"
-					stringResult = v["Param2Type"] == "stringresult"
-					if stringResult:
-						returnType = "QByteArray"
-					out.append("\t" + returnType + " " + normalisedName(name, options, feat) + "(" +
-						arguments(v, stringResult, options)+
-						")" + constDeclarator + ";")
+			if feat in ["fun", "get", "set"] and checkTypes(name, v):
+				constDeclarator = " const" if feat == "get" else ""
+				returnType = cppAlias(v["ReturnType"])
+				if returnType == "int":
+					returnType = "sptr_t"
+				stringResult = v["Param2Type"] == "stringresult"
+				if stringResult:
+					returnType = "QByteArray"
+				out.append("\t" + returnType + " " + normalisedName(name, options, feat) + "(" +
+					arguments(v, stringResult, options)+
+					")" + constDeclarator + ";")
 	return out
 
 def methodNames(f, options):
@@ -117,9 +115,8 @@ def methodNames(f, options):
 		v = f.features[name]
 		if v["Category"] != "Deprecated":
 			feat = v["FeatureType"]
-			if feat in ["fun", "get", "set"]:
-				if checkTypes(name, v):
-					yield normalisedName(name, options)
+			if feat in ["fun", "get", "set"] and checkTypes(name, v):
+				yield normalisedName(name, options)
 
 def printCPPFile(f, options):
 	out = []
@@ -127,63 +124,50 @@ def printCPPFile(f, options):
 		v = f.features[name]
 		if v["Category"] != "Deprecated":
 			feat = v["FeatureType"]
-			if feat in ["fun", "get", "set"]:
-				if checkTypes(name, v):
-					constDeclarator = " const" if feat == "get" else ""
-					featureDefineName = "SCI_" + name.upper()
-					returnType = cppAlias(v["ReturnType"])
-					if returnType == "int":
-						returnType = "sptr_t"
-					stringResult = v["Param2Type"] == "stringresult"
-					if stringResult:
-						returnType = "QByteArray"
-					returnStatement = ""
-					if returnType != "void":
-						returnStatement = "return "
-					out.append(returnType + " ScintillaEdit::" + normalisedName(name, options, feat) + "(" +
-						arguments(v, stringResult, options) +
-						")" + constDeclarator + " {")
-					returns = ""
-					if stringResult:
-						returns += "    " + returnStatement + "TextReturner(" + featureDefineName + ", "
-						if "*" in cppAlias(v["Param1Type"]):
-							returns += "(sptr_t)"
-						if v["Param1Name"]:
-							returns += normalisedName(v["Param1Name"], options)
-						else:
-							returns += "0"
-						returns += ");"
-					else:
-						returns += "    " + returnStatement + "send(" + featureDefineName + ", "
-						if "*" in cppAlias(v["Param1Type"]):
-							returns += "(sptr_t)"
-						if v["Param1Name"]:
-							returns += normalisedName(v["Param1Name"], options)
-						else:
-							returns += "0"
-						returns += ", "
-						if "*" in cppAlias(v["Param2Type"]):
-							returns += "(sptr_t)"
-						if v["Param2Name"]:
-							returns += normalisedName(v["Param2Name"], options)
-						else:
-							returns += "0"
-						returns += ");"
-					out.append(returns)
-					out.append("}")
-					out.append("")
+			if feat in ["fun", "get", "set"] and checkTypes(name, v):
+				constDeclarator = " const" if feat == "get" else ""
+				featureDefineName = f"SCI_{name.upper()}"
+				returnType = cppAlias(v["ReturnType"])
+				if returnType == "int":
+					returnType = "sptr_t"
+				stringResult = v["Param2Type"] == "stringresult"
+				if stringResult:
+					returnType = "QByteArray"
+				returnStatement = ""
+				if returnType != "void":
+					returnStatement = "return "
+				out.append(
+					f"{returnType} ScintillaEdit::{normalisedName(name, options, feat)}({arguments(v, stringResult, options)}){constDeclarator}"
+					+ " {"
+				)
+				returns = ""
+				if stringResult:
+					returns += f"    {returnStatement}TextReturner({featureDefineName}, "
+					if "*" in cppAlias(v["Param1Type"]):
+						returns += "(sptr_t)"
+					returns += normalisedName(v["Param1Name"], options) if v["Param1Name"] else "0"
+				else:
+					returns += f"    {returnStatement}send({featureDefineName}, "
+					if "*" in cppAlias(v["Param1Type"]):
+						returns += "(sptr_t)"
+					returns += normalisedName(v["Param1Name"], options) if v["Param1Name"] else "0"
+					returns += ", "
+					if "*" in cppAlias(v["Param2Type"]):
+						returns += "(sptr_t)"
+					returns += normalisedName(v["Param2Name"], options) if v["Param2Name"] else "0"
+				returns += ");"
+				out.extend((returns, "}", ""))
 	return out
 
 def gtkNames():
 	# The full path on my machine: should be altered for anyone else
 	p = "C:/Users/Neil/Downloads/wingide-source-4.0.1-1/wingide-source-4.0.1-1/external/gtkscintilla2/gtkscintilla.c"
 	with open(p) as f:
-		for l in f.readlines():
+		for l in f:
 			if "gtk_scintilla_" in l:
 				name = l.split()[1][14:]
 				if '(' in name:
-					name = name.split('(')[0]
-					yield name
+					yield name.split('(')[0]
 
 def usage():
 	print("WidgetGen.py [-c|--clean][-h|--help][-u|--underscore-names]")

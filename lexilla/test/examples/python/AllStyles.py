@@ -13,16 +13,12 @@
 # single-quoted-string=4
 'str'
 
-# keyword=5
-pass
-
 # triple-quoted-string=6
 '''str'''
 
 # triple-double-quoted-string=7
 """str"""
 
-# class-name=8
 class ClassName:
 	pass
 
